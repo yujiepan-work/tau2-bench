@@ -109,7 +109,7 @@ All successful responses will return the tool's output directly. Errors will ret
         self._setup_tool_routes(tool_signatures, "tools")
 
         # Set up user tools if they exist
-        if hasattr(self.environment, "user_tools"):
+        if self.environment.user_tools is not None:
             user_tool_signatures = get_tool_signatures(self.environment.user_tools)
             self._setup_tool_routes(user_tool_signatures, "user_tools")
 
