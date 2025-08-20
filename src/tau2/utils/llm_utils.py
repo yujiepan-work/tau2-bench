@@ -7,7 +7,6 @@ from litellm import completion, completion_cost
 from litellm.caching.caching import Cache
 from litellm.main import ModelResponse, Usage
 from loguru import logger
-
 from tau2.config import (
     DEFAULT_LLM_CACHE_TYPE,
     DEFAULT_MAX_RETRIES,
@@ -141,7 +140,8 @@ def to_litellm_messages(messages: list[Message]) -> list[dict]:
     litellm_messages = []
     for message in messages:
         if isinstance(message, UserMessage):
-            litellm_messages.append({"role": "user", "content": message.content})
+            litellm_messages.append(
+                {"role": "user", "content": message.content})
         elif isinstance(message, AssistantMessage):
             tool_calls = None
             if message.is_tool_call():
@@ -173,7 +173,8 @@ def to_litellm_messages(messages: list[Message]) -> list[dict]:
                 }
             )
         elif isinstance(message, SystemMessage):
-            litellm_messages.append({"role": "system", "content": message.content})
+            litellm_messages.append(
+                {"role": "system", "content": message.content})
     return litellm_messages
 
 
@@ -230,6 +231,13 @@ def generate(
         "The response should be an assistant message"
     )
     content = response.message.content
+    reasoning_content = None
+    if isinstance(content, str):
+        if '</think>' in content:
+            _idx = content.index('</think>')
+            reasoning_content = content[:_idx].strip()
+            content = content[_idx + len('</think>'):].strip()
+
     tool_calls = response.message.tool_calls or []
     tool_calls = [
         ToolCall(
@@ -240,6 +248,10 @@ def generate(
         for tool_call in tool_calls
     ]
     tool_calls = tool_calls or None
+    raw_data = response.to_dict()
+    if reasoning_content is not None:
+        raw_data = raw_data if isinstance(raw_data, dict) else {}
+        raw_data["_parsed_reasoning_content"] = reasoning_content
 
     message = AssistantMessage(
         role="assistant",
@@ -247,7 +259,7 @@ def generate(
         tool_calls=tool_calls,
         cost=cost,
         usage=usage,
-        raw_data=response.to_dict(),
+        raw_data=raw_data,
     )
     return message
 
@@ -268,7 +280,8 @@ def get_cost(messages: list[Message]) -> tuple[float, float] | None:
             elif isinstance(message, UserMessage):
                 user_cost += message.cost
         else:
-            logger.warning(f"Message {message.role}: {message.content} has no cost")
+            logger.warning(
+                f"Message {message.role}: {message.content} has no cost")
             return None
     return agent_cost, user_cost
 
@@ -282,7 +295,8 @@ def get_token_usage(messages: list[Message]) -> dict:
         if isinstance(message, ToolMessage):
             continue
         if message.usage is None:
-            logger.warning(f"Message {message.role}: {message.content} has no usage")
+            logger.warning(
+                f"Message {message.role}: {message.content} has no usage")
             continue
         usage["completion_tokens"] += message.usage["completion_tokens"]
         usage["prompt_tokens"] += message.usage["prompt_tokens"]
