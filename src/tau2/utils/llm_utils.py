@@ -234,7 +234,7 @@ def generate(
     reasoning_content = None
     if isinstance(content, str):
         if '</think>' in content:
-            _idx = content.index('</think>')
+            _idx = content.rindex('</think>')
             reasoning_content = content[:_idx].strip()
             content = content[_idx + len('</think>'):].strip()
 
