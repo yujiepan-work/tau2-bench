@@ -230,13 +230,14 @@ def generate(
     assert response.message.role == "assistant", (
         "The response should be an assistant message"
     )
-    content = response.message.content
+    content = response.message.content or ''
     reasoning_content = None
-    if isinstance(content, str):
-        if '</think>' in content:
-            _idx = content.rindex('</think>')
-            reasoning_content = content[:_idx].strip()
-            content = content[_idx + len('</think>'):].strip()
+    if '</think>' in content:
+        _idx = content.index('</think>')
+        reasoning_content = content[:_idx].strip().split('<think>')[-1].strip()
+        content = content[_idx + len('</think>'):].strip()
+    else:
+        content = content.strip()
 
     tool_calls = response.message.tool_calls or []
     tool_calls = [
